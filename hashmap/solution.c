@@ -1,6 +1,6 @@
-#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 typedef void *(*ResolveCollisionCallback)(void *old_data, void *new_data);
 typedef void (*DestroyDataCallback)(void *data);
@@ -200,3 +200,43 @@ void set_hash_function(HashMap *hm, unsigned int (*hash_function)(char *key)) {
     free(old_buckets);
 }
 
+
+
+void print_stuff(char *key, void *data) {
+    int *count = (int *)data;
+    printf("%s: %d \n", key, *count);
+}
+
+void destroy_int_pointer(void *data) {
+    free(data);
+}
+
+void count_words(FILE * stream) {
+    if (!stream) return;
+
+    HashMap *hm = create_hashmap(1001);
+    if (!hm) return;
+
+    char buf[32001];
+
+    fscanf(stream, "%*[^0-9a-zA-Z]\n");
+    while (fscanf(stream, "%32000[0-9a-zA-Z]%*[^0-9a-zA-Z]", buf) == 1) {
+      int *count = (int *)get_data(hm, buf);
+
+      if (count == NULL) {
+        count = malloc(sizeof(int));
+        if (!count)
+          continue;
+
+        *count = 1;
+
+        insert_data(hm, buf, count, NULL);
+      } else {
+        (*count)++;
+      }
+    }
+
+    iterate(hm, print_stuff);
+
+    delete_hashmap(hm, destroy_int_pointer);
+}
