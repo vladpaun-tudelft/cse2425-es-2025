@@ -1,53 +1,32 @@
-#include "pico/stdlib.h"
+#include <hardware/regs/io_bank0.h>
+#include <hardware/structs/io_bank0.h>
+#include <hardware/structs/sio.h>
 
-#define B1A 17
-#define B2A 27
-#define A1A 16
-#define A2A 26
+#define LEDPIN 25
+#define MASK(x) (1L << (x))
 
-static inline void init_pin(uint pin) {
-  gpio_init(pin);
-  gpio_set_dir(pin, GPIO_OUT);
-  gpio_put(pin, 0);
-}
-
-// Motor A
-static inline void motor_a_forward(void) {
-  gpio_put(A1A, 1);
-  gpio_put(A2A, 0);
-}
-static inline void motor_a_reverse(void) {
-  gpio_put(A1A, 0);
-  gpio_put(A2A, 1);
-}
-
-// Motor B
-static inline void motor_b_forward(void) {
-  gpio_put(B1A, 1);
-  gpio_put(B2A, 0);
-}
-static inline void motor_b_reverse(void) {
-  gpio_put(B1A, 0);
-  gpio_put(B2A, 1);
-}
-
-int main() {
-  stdio_init_all();
-
-  init_pin(A1A);
-  init_pin(A2A);
-  init_pin(B1A);
-  init_pin(B2A);
-
-  while (true) {
-    // 2s one way
-    motor_a_forward();
-    motor_b_forward();
-    sleep_ms(2000);
-
-    // 2s the other way
-    motor_a_reverse();
-    motor_b_reverse();
-    sleep_ms(2000);
+void ms_delay(int ms) {
+  while (ms-- > 0) {
+    volatile int x = 5000;
+    while (x-- > 0) {
+      __asm("nop");
+    }
   }
+}
+
+void setup() {
+  io_bank0_hw->io[LEDPIN].ctrl = GPIO_FUNC_SIO << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
+  sio_hw->gpio_oe_set = MASK(LEDPIN);
+}
+
+void loop() {
+  sio_hw->gpio_set = MASK(LEDPIN);
+  ms_delay(300);
+  sio_hw->gpio_clr = MASK(LEDPIN);
+  ms_delay(300);
+}
+
+void main() {
+  setup();
+  while (true) { loop(); }
 }
