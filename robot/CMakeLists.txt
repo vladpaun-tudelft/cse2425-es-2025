@@ -9,8 +9,12 @@ set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
 
+set(ROBOT_SRC_DIR "src" CACHE PATH "Source directory for robot sources")
+
 add_executable(robot
-    src/main.c
+    ${ROBOT_SRC_DIR}/main.c
+    ${ROBOT_SRC_DIR}/timers.c
+    ${ROBOT_SRC_DIR}/motors_pwm.c
 )
 
 target_link_libraries(robot
