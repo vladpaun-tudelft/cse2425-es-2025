@@ -13,15 +13,7 @@ latest:
 	picotool reboot
 
 assignment1:
-	cmake -S $(SNAPSHOT_ASSIGNMENT1) -B $(BUILD_ASSIGNMENT1) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-	cmake --build $(BUILD_ASSIGNMENT1)
-	picotool load $(BUILD_ASSIGNMENT1)/robot.uf2
+	cmake -S $(SNAPSHOT_ASSIGNMENT1) -B $(SNAPSHOT_ASSIGNMENT1)/$(BUILD_ASSIGNMENT1) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	cmake --build $(SNAPSHOT_ASSIGNMENT1)/$(BUILD_ASSIGNMENT1)
+	picotool load $(SNAPSHOT_ASSIGNMENT1)/$(BUILD_ASSIGNMENT1)/robot.uf2
 	picotool reboot
-
-snapshot:
-	@if [ -z "$(NAME)" ]; then echo "Usage: make snapshot NAME=assignment_name"; exit 1; fi
-	@if [ -e "snapshots/$(NAME)" ]; then echo "snapshots/$(NAME) already exists"; exit 1; fi
-	@mkdir -p "snapshots/$(NAME)"
-	@cp -a src "snapshots/$(NAME)/"
-	@cp -a pico_sdk_import.cmake "snapshots/$(NAME)/pico_sdk_import.cmake"
-	@cp -a CMakeLists.txt "snapshots/$(NAME)/CMakeLists.txt"

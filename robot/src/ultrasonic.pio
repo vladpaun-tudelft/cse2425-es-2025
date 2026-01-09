@@ -1,0 +1,48 @@
+.program hcsr04_echo_us
+
+.wrap_target
+set pindirs, 1
+set pins, 1 [9]
+set pins, 0
+
+set y, 29
+wait_hi_ms:
+  set x, 31
+wait_hi_chunk:
+  nop [31]
+  jmp pin got_hi
+  jmp x-- wait_hi_chunk
+  jmp y-- wait_hi_ms
+
+mov isr, null
+push
+jmp cooldown_31
+
+got_hi:
+mov x, ~null
+count_hi:
+  jmp pin dec
+  jmp done
+dec:
+  jmp x-- count_hi
+done:
+mov isr, ~x
+push
+
+cooldown_31:
+set y, 31
+cool_ms_31:
+  set x, 31
+cool_chunk_31:
+  nop [31]
+  jmp x-- cool_chunk_31
+  jmp y-- cool_ms_31
+
+set y, 28
+cool_ms_28:
+  set x, 31
+cool_chunk_28:
+  nop [31]
+  jmp x-- cool_chunk_28
+  jmp y-- cool_ms_28
+.wrap
