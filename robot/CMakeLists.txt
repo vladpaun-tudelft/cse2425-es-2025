@@ -15,13 +15,16 @@ add_executable(robot
     ${ROBOT_SRC_DIR}/main.c
     ${ROBOT_SRC_DIR}/timers.c
     ${ROBOT_SRC_DIR}/motors_pwm.c
+    ${ROBOT_SRC_DIR}/ultrasonic.c
 )
+
+pico_generate_pio_header(robot ${ROBOT_SRC_DIR}/ultrasonic.pio)
 
 target_link_libraries(robot
     pico_stdlib
+    hardware_pio
 )
 
-# Optional but recommended for USB serial + easier workflow :contentReference[oaicite:1]{index=1}
 pico_enable_stdio_usb(robot 1)
 pico_enable_stdio_uart(robot 0)
 
