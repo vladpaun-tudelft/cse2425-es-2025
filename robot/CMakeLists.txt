@@ -15,10 +15,10 @@ add_executable(robot
     ${ROBOT_SRC_DIR}/main.c
     ${ROBOT_SRC_DIR}/timers.c
     ${ROBOT_SRC_DIR}/motors_pwm.c
-    ${ROBOT_SRC_DIR}/ultrasonic.c
+    ${ROBOT_SRC_DIR}/HCSR04.c
 )
 
-pico_generate_pio_header(robot ${ROBOT_SRC_DIR}/ultrasonic.pio)
+pico_generate_pio_header(robot ${ROBOT_SRC_DIR}/HCSR04.pio)
 
 target_link_libraries(robot
     pico_stdlib
