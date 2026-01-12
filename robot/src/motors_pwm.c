@@ -76,6 +76,17 @@ static void pwm_set_gpio_level(uint gpio, uint16_t level) {
   pwm_hw->slice[slice].cc = cc;
 }
 
+static inline uint8_t signed_speed_to_duty(int8_t speed, motor_dir_t *dir) {
+  int16_t s = (int16_t)speed;
+  if (s >= 0) {
+    *dir = MOTOR_DIR_FORWARD;
+    return clamp_u8((uint8_t)s, 0u, 100u);
+  }
+
+  *dir = MOTOR_DIR_REVERSE;
+  return clamp_u8((uint8_t)(-s), 0u, 100u);
+}
+
 
 static void motor_apply_pins(uint in_fwd, uint in_rev, motor_dir_t dir,
                              uint8_t duty_percent) {
@@ -133,6 +144,27 @@ void motors_pwm_drive(motor_select_t which, motor_dir_t dir,
 
 void motors_pwm_drive_lr(motor_dir_t left_dir, uint8_t left_duty,
                          motor_dir_t right_dir, uint8_t right_duty) {
+  motor_apply_pins(LEFT_IN_FWD, LEFT_IN_REV, left_dir, left_duty);
+  motor_apply_pins(RIGHT_IN_FWD, RIGHT_IN_REV, right_dir, right_duty);
+}
+
+void motors_pwm_drive_signed(motor_select_t which, int8_t speed) {
+  motor_dir_t dir;
+  if (which == MOTOR_LEFT || which == MOTOR_BOTH) {
+    uint8_t duty = signed_speed_to_duty(speed, &dir);
+    motor_apply_pins(LEFT_IN_FWD, LEFT_IN_REV, dir, duty);
+  }
+  if (which == MOTOR_RIGHT || which == MOTOR_BOTH) {
+    uint8_t duty = signed_speed_to_duty(speed, &dir);
+    motor_apply_pins(RIGHT_IN_FWD, RIGHT_IN_REV, dir, duty);
+  }
+}
+
+void motors_pwm_drive_lr_signed(int8_t left_speed, int8_t right_speed) {
+  motor_dir_t left_dir;
+  motor_dir_t right_dir;
+  uint8_t left_duty = signed_speed_to_duty(left_speed, &left_dir);
+  uint8_t right_duty = signed_speed_to_duty(right_speed, &right_dir);
   motor_apply_pins(LEFT_IN_FWD, LEFT_IN_REV, left_dir, left_duty);
   motor_apply_pins(RIGHT_IN_FWD, RIGHT_IN_REV, right_dir, right_duty);
 }
