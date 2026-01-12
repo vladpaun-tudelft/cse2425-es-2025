@@ -1,21 +1,16 @@
 .program HCSR04_trig
-.wrap_target
 init:
     pull block
     mov isr, osr
+.wrap_target
 loop:
     set pins, 0
     set pins, 1 [19]
     set pins, 0
 
     mov x, isr
-delay_outer:
-    set y, 31
-delay_inner:
-    nop [31]
-    jmp y--, delay_inner
-    jmp x--, delay_outer
-    jmp loop
+delay:
+    jmp x--, delay
 .wrap
 
 
@@ -31,43 +26,35 @@ init:
 
 .wrap_target
 wait_high:
-    jmp pin, got_high
-    jmp wait_high
-got_high:
-    jmp !x, check_go
-    jmp check_stop
+    wait 1 pin 0
+    jmp !x, load_go
 
-check_go:
-    nop [31]
-    jmp pin, go_ready
-    jmp rearm
-
-go_ready:
+load_stop:
+    mov y, isr
+    jmp check
+load_go:
     mov y, osr
-go_loop:
-    jmp pin, go_dec
+
+check:
+    nop [31]
+
+loop:
+    jmp pin, dec
+    jmp !x, rearm
+    irq 0
+    set x, 0
     jmp rearm
-go_dec:
-    jmp y--, go_loop
+
+dec:
+    jmp y--, loop
+    jmp !x, go_event
+    jmp rearm
+
+go_event:
     irq 1
     set x, 1
     jmp rearm
 
-check_stop:
-    nop [31]
-    jmp pin, stop_ready
-    jmp rearm
-
-stop_ready:
-    mov y, isr
-stop_loop:
-    jmp pin, stop_dec
-    irq 0
-    set x, 0
-    jmp rearm
-stop_dec:
-    jmp y--, stop_loop
-
 rearm:
-    jmp pin, rearm
+    wait 0 pin 0
 .wrap

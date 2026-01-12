@@ -9,8 +9,7 @@ typedef struct {
   uint8_t echo_pin;
   uint32_t stop_cm;
   uint32_t go_cm;
-  uint32_t period_ms;
+  uint64_t period_ms;
 } hcsr04_config_t;
 
-bool HCSR04_init(const hcsr04_config_t *cfg, hcsr04_event_cb_t on_stop,
-                 hcsr04_event_cb_t on_go);
+bool HCSR04_init(const hcsr04_config_t *cfg, hcsr04_event_cb_t on_stop, hcsr04_event_cb_t on_go);
