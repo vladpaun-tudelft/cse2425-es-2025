@@ -22,8 +22,7 @@ static hcsr04_event_cb_t g_on_go = NULL;
 static inline uint32_t cm_to_us(uint32_t cm) { return cm * 58u; }
 
 static inline uint32_t period_ms_to_outer_count(uint64_t period_ms) {
-  uint64_t period_s = period_ms / 1000ull;
-  uint64_t cycles = SM_HZ * period_s;
+  uint64_t cycles = (SM_HZ * period_ms) / 1000ull;
   if (cycles <= TRIG_BASE_CYCLES)
     return 1u;
   return (uint32_t)(cycles - TRIG_BASE_CYCLES);
