@@ -3,109 +3,93 @@
 
 #include <hardware/clocks.h>
 #include <hardware/gpio.h>
-#include <hardware/irq.h>
 #include <hardware/pio.h>
 #include <stdint.h>
 
-#define PIO_TRIG pio0
-#define PIO_ECHO pio0
-#define SM_TRIG 0u
-#define SM_ECHO 1u
-
-#define SM_HZ 2000000ull
+#define SM_HZ_CONTINUOUS 2000000ull
 #define TRIG_BASE_CYCLES 24ull
-#define MIN_PULSE_US 16u
 
-static hcsr04_event_cb_t g_on_stop = NULL;
-static hcsr04_event_cb_t g_on_go = NULL;
+static bool g_trig_loaded[2] = {false, false};
+static bool g_echo_loaded[2] = {false, false};
+static uint g_trig_off[2] = {0u, 0u};
+static uint g_echo_off[2] = {0u, 0u};
 
-static inline uint32_t cm_to_us(uint32_t cm) { return cm * 58u; }
+static inline uint pio_index(PIO pio) { return (pio == pio1) ? 1u : 0u; }
 
-static inline uint32_t period_ms_to_outer_count(uint64_t period_ms) {
-  uint64_t cycles = (SM_HZ * period_ms) / 1000ull;
+static inline uint32_t period_ms_to_outer_count(uint64_t period_ms,
+                                                uint64_t sm_hz) {
+  uint64_t cycles = (sm_hz * period_ms) / 1000ull;
   if (cycles <= TRIG_BASE_CYCLES)
     return 1u;
   return (uint32_t)(cycles - TRIG_BASE_CYCLES);
 }
 
-static void pio0_irq0_handler(void) {
-  if (pio_interrupt_get(PIO_ECHO, 0)) {
-    pio_interrupt_clear(PIO_ECHO, 0);
-    if (g_on_stop)
-      g_on_stop();
-  }
-  if (pio_interrupt_get(PIO_ECHO, 1)) {
-    pio_interrupt_clear(PIO_ECHO, 1);
-    if (g_on_go)
-      g_on_go();
-  }
-}
-
-bool HCSR04_init(const hcsr04_config_t *cfg, hcsr04_event_cb_t on_stop,
-                 hcsr04_event_cb_t on_go) {
+bool HCSR04_init_continuous(const hcsr04_config_t *cfg) {
   if (!cfg)
     return false;
-  if (cfg->trig_pin > 29u || cfg->echo_pin > 29u || cfg->period_ms < 60u ||
-      cfg->stop_cm == 0u || cfg->go_cm == 0u || cfg->go_cm <= cfg->stop_cm)
+  if (cfg->trig_pin > 29u || cfg->echo_pin > 29u || cfg->period_ms < 60u)
+    return false;
+  if (cfg->pio != pio0 && cfg->pio != pio1)
     return false;
 
-  g_on_stop = on_stop;
-  g_on_go = on_go;
+  uint pio_idx = pio_index(cfg->pio);
+  if (!g_trig_loaded[pio_idx]) {
+    if (!pio_can_add_program(cfg->pio, &HCSR04_trig_program))
+      return false;
+    g_trig_off[pio_idx] = pio_add_program(cfg->pio, &HCSR04_trig_program);
+    g_trig_loaded[pio_idx] = true;
+  }
+  if (!g_echo_loaded[pio_idx]) {
+    if (!pio_can_add_program(cfg->pio, &HCSR04_echo_program))
+      return false;
+    g_echo_off[pio_idx] = pio_add_program(cfg->pio, &HCSR04_echo_program);
+    g_echo_loaded[pio_idx] = true;
+  }
+  uint off_trig = g_trig_off[pio_idx];
+  uint off_echo = g_echo_off[pio_idx];
 
-  if (!pio_can_add_program(PIO_TRIG, &HCSR04_trig_program))
-    return false;
-  uint off_trig = pio_add_program(PIO_TRIG, &HCSR04_trig_program);
-
-  if (!pio_can_add_program(PIO_TRIG, &HCSR04_echo_program))
-    return false;
-  uint off_echo = pio_add_program(PIO_TRIG, &HCSR04_echo_program);
-
-  float div = (float)clock_get_hz(clk_sys) / (float)SM_HZ;
+  float div = (float)clock_get_hz(clk_sys) / (float)SM_HZ_CONTINUOUS;
 
   // TRIG SM
-  pio_gpio_init(PIO_TRIG, cfg->trig_pin);
+  pio_gpio_init(cfg->pio, cfg->trig_pin);
   pio_sm_config ct = HCSR04_trig_program_get_default_config(off_trig);
   sm_config_set_clkdiv(&ct, div);
-  pio_sm_set_consecutive_pindirs(PIO_TRIG, SM_TRIG, cfg->trig_pin, 1, true);
+  pio_sm_set_consecutive_pindirs(cfg->pio, cfg->sm_trig, cfg->trig_pin, 1, true);
   sm_config_set_set_pins(&ct, cfg->trig_pin, 1);
-  pio_sm_init(PIO_TRIG, SM_TRIG, off_trig, &ct);
-  pio_sm_clear_fifos(PIO_TRIG, SM_TRIG);
-  pio_sm_put_blocking(PIO_TRIG, SM_TRIG,
-                      period_ms_to_outer_count(cfg->period_ms));
+  pio_sm_init(cfg->pio, cfg->sm_trig, off_trig, &ct);
+  pio_sm_clear_fifos(cfg->pio, cfg->sm_trig);
+  pio_sm_put_blocking(
+      cfg->pio, cfg->sm_trig,
+      period_ms_to_outer_count(cfg->period_ms, SM_HZ_CONTINUOUS));
 
   // ECHO SM
-  pio_gpio_init(PIO_ECHO, cfg->echo_pin);
-  gpio_set_function(cfg->echo_pin, GPIO_FUNC_PIO0);
+  pio_gpio_init(cfg->pio, cfg->echo_pin);
   gpio_pull_down(cfg->echo_pin);
-  pio_sm_set_consecutive_pindirs(PIO_ECHO, SM_ECHO, cfg->echo_pin, 1, false);
+  pio_sm_set_consecutive_pindirs(cfg->pio, cfg->sm_echo, cfg->echo_pin, 1,
+                                 false);
   pio_sm_config ce = HCSR04_echo_program_get_default_config(off_echo);
   sm_config_set_clkdiv(&ce, div);
   sm_config_set_in_pins(&ce, cfg->echo_pin);
   sm_config_set_jmp_pin(&ce, cfg->echo_pin);
+  pio_sm_init(cfg->pio, cfg->sm_echo, off_echo, &ce);
+  pio_sm_clear_fifos(cfg->pio, cfg->sm_echo);
 
-  pio_sm_init(PIO_ECHO, SM_ECHO, off_echo, &ce);
-  pio_sm_clear_fifos(PIO_ECHO, SM_ECHO);
-
-  uint32_t stop_us = cm_to_us(cfg->stop_cm);
-  uint32_t go_us = cm_to_us(cfg->go_cm);
-  if (stop_us <= MIN_PULSE_US || go_us <= MIN_PULSE_US)
-    return false;
-  pio_sm_put_blocking(PIO_ECHO, SM_ECHO, stop_us - MIN_PULSE_US);
-  pio_sm_put_blocking(PIO_ECHO, SM_ECHO, go_us - MIN_PULSE_US);
-
-  
-  irq_set_exclusive_handler(PIO0_IRQ_0, pio0_irq0_handler);
-
-  pio_interrupt_clear(PIO_ECHO, 0);
-  pio_interrupt_clear(PIO_ECHO, 1);
-
-  pio_set_irq0_source_enabled(PIO_ECHO, pis_interrupt0, true);
-  pio_set_irq0_source_enabled(PIO_ECHO, pis_interrupt1, true);
-
-  irq_set_enabled(PIO0_IRQ_0, true);
-
-  pio_sm_set_enabled(PIO_ECHO, SM_ECHO, true);
-  pio_sm_set_enabled(PIO_TRIG, SM_TRIG, true);
+  pio_sm_set_enabled(cfg->pio, cfg->sm_echo, true);
+  pio_sm_set_enabled(cfg->pio, cfg->sm_trig, true);
 
   return true;
+}
+
+float HCSR04_get_distance_cm(const hcsr04_config_t *cfg) {
+  if (!cfg)
+    return 0.0f;
+  if (cfg->pio != pio0 && cfg->pio != pio1)
+    return 0.0f;
+
+  while (pio_sm_is_rx_fifo_empty(cfg->pio, cfg->sm_echo)) {
+  }
+
+  uint32_t raw = pio_sm_get(cfg->pio, cfg->sm_echo);
+  uint32_t ticks = 0xFFFFFFFFu - raw;
+  return ((float)ticks) / 58.0f;
 }

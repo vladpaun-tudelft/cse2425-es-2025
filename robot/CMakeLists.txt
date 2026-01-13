@@ -14,6 +14,7 @@ set(ROBOT_SRC_DIR "src" CACHE PATH "Source directory for robot sources")
 add_executable(robot
     ${ROBOT_SRC_DIR}/main.c
     ${ROBOT_SRC_DIR}/line_follow.c
+    ${ROBOT_SRC_DIR}/obstacle_avoidance.c
     ${ROBOT_SRC_DIR}/timers.c
     ${ROBOT_SRC_DIR}/motors_pwm.c
     ${ROBOT_SRC_DIR}/HCSR04.c
@@ -26,6 +27,7 @@ pico_generate_pio_header(robot ${ROBOT_SRC_DIR}/HCSR04.pio)
 target_link_libraries(robot
     pico_stdlib
     hardware_pio
+    pico_multicore
 )
 
 pico_enable_stdio_usb(robot 1)
