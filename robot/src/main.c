@@ -14,28 +14,15 @@
 #define MIN_DUTY 65
 #define MAX_SPEED 100
 #define PID_OUT_MARGIN 0
-#define ERROR_DEADZONE 0.05f
 
 #define PID_KP 200.0f
 #define PID_KI 0.0f
 #define PID_KD 0.0f
 #define PID_OUT_MAX (MAX_SPEED - BASE_SPEED - PID_OUT_MARGIN)
 #define PID_OUT_MIN (-(PID_OUT_MAX))
-
-#define INNER_GAIN_MIN 1.0f
-#define INNER_GAIN_ERR_START 0.15f
-#define INNER_TARGET_MIN_SPEED (-(MAX_SPEED))
-#define INNER_GAIN_MAX ((float)(BASE_SPEED - (INNER_TARGET_MIN_SPEED)) / (float)PID_OUT_MAX)
+#define INNER_CORR_GAIN ((float)(MAX_SPEED + BASE_SPEED) / (float)PID_OUT_MAX)
 
 static inline int16_t clamp_i16(int16_t v, int16_t lo, int16_t hi) {
-  if (v < lo)
-    return lo;
-  if (v > hi)
-    return hi;
-  return v;
-}
-
-static inline float clamp_f(float v, float lo, float hi) {
   if (v < lo)
     return lo;
   if (v > hi)
@@ -73,19 +60,9 @@ int main(void) {
 
     float denom = (float)left_raw + (float)right_raw + 1.0f;
     float error = ((float)left_raw - (float)right_raw) / denom;
-    float abs_error = fabsf(error);
-    if (abs_error < ERROR_DEADZONE) {
-      error = 0.0f;
-      abs_error = 0.0f;
-    }
 
     float correction = PID_update(&pid, error, LOOP_DT_S);
-    float gain_t = clamp_f((abs_error - INNER_GAIN_ERR_START) /
-                               (1.0f - INNER_GAIN_ERR_START),
-                           0.0f, 1.0f);
-    float inner_gain =
-        INNER_GAIN_MIN + gain_t * (INNER_GAIN_MAX - INNER_GAIN_MIN);
-    float inner_correction = correction * inner_gain;
+    float inner_correction = correction * INNER_CORR_GAIN;
 
     float left_cmd = (float)BASE_SPEED;
     float right_cmd = (float)BASE_SPEED;
