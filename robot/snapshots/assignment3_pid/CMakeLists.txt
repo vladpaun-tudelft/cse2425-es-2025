@@ -13,6 +13,7 @@ set(ROBOT_SRC_DIR "${CMAKE_CURRENT_LIST_DIR}/src" CACHE PATH "Source directory f
 
 add_executable(robot
     ${ROBOT_SRC_DIR}/main.c
+    ${ROBOT_SRC_DIR}/line_follow.c
     ${ROBOT_SRC_DIR}/timers.c
     ${ROBOT_SRC_DIR}/motors_pwm.c
     ${ROBOT_SRC_DIR}/HCSR04.c
