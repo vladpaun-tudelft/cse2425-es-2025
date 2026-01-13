@@ -1,0 +1,60 @@
+.program HCSR04_trig
+init:
+    pull block
+    mov isr, osr
+.wrap_target
+loop:
+    set pins, 0
+    set pins, 1 [19]
+    set pins, 0
+
+    mov x, isr
+delay:
+    jmp x--, delay
+.wrap
+
+
+.program HCSR04_echo
+
+init:
+    pull block
+    mov isr, osr          ; stop_threshold_us
+
+    pull block            ; go_threshold_us
+
+    set x, 0
+
+.wrap_target
+wait_high:
+    wait 1 pin 0
+    jmp !x, load_go
+
+load_stop:
+    mov y, isr
+    jmp check
+load_go:
+    mov y, osr
+
+check:
+    nop [31]
+
+loop:
+    jmp pin, dec
+    jmp !x, rearm
+    irq 0
+    set x, 0
+    jmp rearm
+
+dec:
+    jmp y--, loop
+    jmp !x, go_event
+    jmp rearm
+
+go_event:
+    irq 1
+    set x, 1
+    jmp rearm
+
+rearm:
+    wait 0 pin 0
+.wrap
