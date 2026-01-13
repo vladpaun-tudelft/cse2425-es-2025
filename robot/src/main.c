@@ -22,6 +22,7 @@ int main(void) {
     line_follow_step(&debug);
 
     debug_print(loop_count, debug);
+    loop_count++;
 
     busy_wait_ms_hw(LOOP_MS);
   }
@@ -34,5 +35,4 @@ void debug_print(uint32_t loop_count, line_follow_debug_t debug) {
            (double)debug.error, (double)debug.correction, (int)debug.left_speed,
            (int)debug.right_speed);
   }
-  loop_count++;
 }

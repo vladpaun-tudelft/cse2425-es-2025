@@ -15,9 +15,9 @@
 
 #define ERROR_DEADZONE 0.0f
 
-#define PID_KP 175.0f
-#define PID_KI 0.5f
-#define PID_KD 1.5f
+#define PID_KP 200.0f
+#define PID_KI 0.0f
+#define PID_KD 2.0f
 #define PID_OUT_MAX (MAX_SPEED - BASE_SPEED - PID_OUT_MARGIN)
 #define PID_OUT_MIN (-(PID_OUT_MAX))
 
