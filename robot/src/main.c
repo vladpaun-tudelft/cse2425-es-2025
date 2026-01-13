@@ -23,7 +23,9 @@
 #define PID_OUT_MAX (MAX_SPEED - BASE_SPEED - PID_OUT_MARGIN)
 #define PID_OUT_MIN (-(PID_OUT_MAX))
 
-#define INNER_CORR_GAIN ((float)(MAX_SPEED + BASE_SPEED) / (float)PID_OUT_MAX)
+#define INNER_CORR_GAIN ((float)(MAX_SPEED + BASE_SPEED) / (float)PID_OUT_MAX) * VLAD_FACTOR_MUL + VLAD_FACTOR_LIN
+#define VLAD_FACTOR_MUL 1.0f
+#define VLAD_FACTOR_LIN 0.0f
 
 static inline int16_t clamp_i16(int16_t v, int16_t lo, int16_t hi) {
   if (v < lo)
