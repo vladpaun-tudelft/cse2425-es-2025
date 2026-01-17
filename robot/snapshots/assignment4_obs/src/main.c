@@ -3,29 +3,66 @@
  * Student number: 6152937
  */
 
+#include "HCSR04.h"
 #include "B83609.h"
 #include "line_follow.h"
-#include "motors_pwm.h"
+#include "multicore.h"
+#include "obstacle_avoidance.h"
 #include "timers.h"
 
 #include <pico/stdio.h>
 #include <stdbool.h>
 
-#define TARGET_DISTANCE_M 2.5f
-#define WHEEL_DIAMETER_MM 65.0f
-#define ENCODER_TICKS_PER_MOTOR_REV 20.0f
-#define STOP_EARLY_MM 30.0f
+#define FRONT_TRIG_PIN 9
+#define FRONT_ECHO_PIN 8
+#define SIDE_TRIG_PIN 7
+#define SIDE_ECHO_PIN 6
+#define SENSOR_PERIOD_MS 60u
+#define STOP_CM 15.0
+#define STOP_COUNT 3u
 
-static uint32_t distance_to_ticks(float meters) {
-  const float pi = 3.1415926f;
-  float wheel_circ_mm = pi * WHEEL_DIAMETER_MM;
-  float mm_per_tick = wheel_circ_mm / ENCODER_TICKS_PER_MOTOR_REV;
-  float target_mm = meters * 1000.0f;
-  float ticks = target_mm / mm_per_tick;
-  if (ticks < 0.0f) {
-    ticks = 0.0f;
+typedef enum {
+  STATE_LINE_FOLLOW = 0,
+  STATE_AVOID_OBSTACLE,
+} robot_state_t;
+
+static hcsr04_config_t front_cfg = (hcsr04_config_t){
+    .pio = pio0,
+    .sm_trig = 0,
+    .sm_echo = 1,
+    .trig_pin = FRONT_TRIG_PIN,
+    .echo_pin = FRONT_ECHO_PIN,
+    .period_ms = SENSOR_PERIOD_MS,
+};
+
+static hcsr04_config_t side_cfg = (hcsr04_config_t){
+    .pio = pio1,
+    .sm_trig = 0,
+    .sm_echo = 1,
+    .trig_pin = SIDE_TRIG_PIN,
+    .echo_pin = SIDE_ECHO_PIN,
+    .period_ms = SENSOR_PERIOD_MS,
+};
+robot_state_t state = STATE_LINE_FOLLOW;
+
+static void core1_entry(void) {
+  uint8_t under_count = 0;
+
+  while (true) {
+    float cm = HCSR04_get_distance_cm(&front_cfg);
+
+    if (state == STATE_LINE_FOLLOW && cm < STOP_CM) {
+      under_count++;
+      if (under_count >= STOP_COUNT) {
+        under_count = 0;
+        multicore_fifo_push_blocking(1u);
+      }
+    } else {
+      under_count = 0;
+    }
+
+    busy_wait_ms_hw(SENSOR_PERIOD_MS);
   }
-  return (uint32_t)(ticks + 0.5f);
 }
 
 int main(void) {
@@ -33,29 +70,26 @@ int main(void) {
   busy_wait_ms_hw(2000);
 
   line_follow_init();
-
   B83609_init();
-  B83609_reset_counts();
+  HCSR04_init_continuous(&front_cfg);
+  HCSR04_init_continuous(&side_cfg);
 
-  uint32_t target_ticks = distance_to_ticks(TARGET_DISTANCE_M);
-  float wheel_circ_mm = 3.1415926f * WHEEL_DIAMETER_MM;
-  float ticks_per_mm = ENCODER_TICKS_PER_MOTOR_REV / wheel_circ_mm;
-  uint32_t stop_early_ticks = (uint32_t)(STOP_EARLY_MM * ticks_per_mm + 0.5f);
-  uint32_t stop_ticks = target_ticks - stop_early_ticks;
+  multicore_launch_core1(core1_entry);
 
   while (true) {
-    line_follow_step(NULL);
-    uint32_t left_ticks = B83609_get_left_count();
+    if (multicore_fifo_rvalid()) {
+      multicore_fifo_drain();
+      state = STATE_AVOID_OBSTACLE;
+    }
 
-    if (left_ticks >= stop_ticks) {
-      motors_pwm_stop(MOTOR_BOTH);
-      break;
+    if (state == STATE_LINE_FOLLOW) {
+      line_follow_step();
+    } else {
+      obstacle_avoidance_run(&front_cfg, &side_cfg);
+      multicore_fifo_drain();
+      state = STATE_LINE_FOLLOW;
     }
 
     busy_wait_ms_hw(10);
-  }
-
-  while (true) {
-    busy_wait_ms_hw(100);
   }
 }
