@@ -44,7 +44,7 @@ void line_follow_init(void) {
   PID_init(&s_pid, PID_KP, PID_KI, PID_KD, PID_OUT_MIN, PID_OUT_MAX);
 }
 
-void line_follow_step(line_follow_debug_t *debug) {
+void line_follow_step() {
   uint16_t left_raw = TCRT5000_read_left_raw();
   uint16_t right_raw = TCRT5000_read_right_raw();
 

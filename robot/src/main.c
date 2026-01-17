@@ -18,7 +18,7 @@
 #define SIDE_TRIG_PIN 7
 #define SIDE_ECHO_PIN 6
 #define SENSOR_PERIOD_MS 60u
-#define STOP_CM 15u
+#define STOP_CM 15.0
 #define STOP_COUNT 3u
 
 typedef enum {
@@ -26,9 +26,24 @@ typedef enum {
   STATE_AVOID_OBSTACLE,
 } robot_state_t;
 
-static hcsr04_config_t front_cfg;
-static hcsr04_config_t side_cfg;
-static volatile bool g_avoid_active = false;
+static hcsr04_config_t front_cfg = (hcsr04_config_t){
+    .pio = pio0,
+    .sm_trig = 0,
+    .sm_echo = 1,
+    .trig_pin = FRONT_TRIG_PIN,
+    .echo_pin = FRONT_ECHO_PIN,
+    .period_ms = SENSOR_PERIOD_MS,
+};
+
+static hcsr04_config_t side_cfg = (hcsr04_config_t){
+    .pio = pio1,
+    .sm_trig = 0,
+    .sm_echo = 1,
+    .trig_pin = SIDE_TRIG_PIN,
+    .echo_pin = SIDE_ECHO_PIN,
+    .period_ms = SENSOR_PERIOD_MS,
+};
+robot_state_t state = STATE_LINE_FOLLOW;
 
 static void core1_entry(void) {
   uint8_t under_count = 0;
@@ -36,7 +51,7 @@ static void core1_entry(void) {
   while (true) {
     float cm = HCSR04_get_distance_cm(&front_cfg);
 
-    if (!g_avoid_active && cm < (float)STOP_CM) {
+    if (state == STATE_LINE_FOLLOW && cm < STOP_CM) {
       under_count++;
       if (under_count >= STOP_COUNT) {
         under_count = 0;
@@ -56,42 +71,23 @@ int main(void) {
 
   line_follow_init();
   B83609_init();
-
-  front_cfg = (hcsr04_config_t){
-      .pio = pio0,
-      .sm_trig = 0,
-      .sm_echo = 1,
-      .trig_pin = FRONT_TRIG_PIN,
-      .echo_pin = FRONT_ECHO_PIN,
-      .period_ms = SENSOR_PERIOD_MS,
-  };
-
-  side_cfg = (hcsr04_config_t){
-      .pio = pio1,
-      .sm_trig = 0,
-      .sm_echo = 1,
-      .trig_pin = SIDE_TRIG_PIN,
-      .echo_pin = SIDE_ECHO_PIN,
-      .period_ms = SENSOR_PERIOD_MS,
-  };
-
   HCSR04_init_continuous(&front_cfg);
   HCSR04_init_continuous(&side_cfg);
+
   multicore_launch_core1(core1_entry);
 
-  robot_state_t state = STATE_LINE_FOLLOW;
   while (true) {
     if (multicore_fifo_rvalid()) {
-      (void)multicore_fifo_pop_blocking();
+      while (multicore_fifo_rvalid()) {
+        (void)multicore_fifo_pop_blocking();
+      }
       state = STATE_AVOID_OBSTACLE;
     }
 
     if (state == STATE_LINE_FOLLOW) {
-      line_follow_step(NULL);
+      line_follow_step();
     } else {
-      g_avoid_active = true;
       obstacle_avoidance_run(&front_cfg, &side_cfg);
-      g_avoid_active = false;
       while (multicore_fifo_rvalid()) {
         (void)multicore_fifo_pop_blocking();
       }
