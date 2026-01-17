@@ -68,7 +68,7 @@ static void forward_hold_side(const hcsr04_config_t *side_cfg,
   PID_init(&pid, 30.0f, 0.0f, 0.0f, -20.0f, 20.0f);
   PID_reset(&pid);
 
-  while (TCRT5000_read_right_raw() < 1500u) {
+  while (TCRT5000_read_right_raw() < 1200u) {
     float side_cm = read_side_cm(side_cfg);
     float error = (target_cm - side_cm) / (target_cm + side_cm + 1.0f);
     float corr = PID_update(&pid, error, loop_dt_s);
