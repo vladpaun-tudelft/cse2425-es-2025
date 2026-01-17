@@ -13,9 +13,16 @@ typedef enum {
   MOTOR_DIR_REVERSE = 1,
 } motor_dir_t;
 
+typedef enum {
+  MOTOR_TURN_RIGHT = 0,
+  MOTOR_TURN_LEFT = 1,
+} motor_turn_dir_t;
+
 void motors_pwm_init(void);
 void motors_pwm_stop(motor_select_t which);
 void motors_pwm_drive(motor_select_t which, motor_dir_t dir, uint8_t duty_percent);
 void motors_pwm_drive_lr(motor_dir_t left_dir, uint8_t left_duty, motor_dir_t right_dir, uint8_t right_duty);
 void motors_pwm_drive_signed(motor_select_t which, int8_t speed);
 void motors_pwm_drive_lr_signed(int8_t left_speed, int8_t right_speed);
+void motors_pwm_drive_forward_mm(uint8_t speed, float distance_mm);
+void motors_pwm_turn(motor_turn_dir_t dir, uint32_t ticks);

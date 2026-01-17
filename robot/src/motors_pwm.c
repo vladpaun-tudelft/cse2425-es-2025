@@ -1,5 +1,8 @@
 #include "motors_pwm.h"
 
+#include "B83609.h"
+#include "timers.h"
+
 #include <hardware/regs/io_bank0.h>
 #include <hardware/regs/pwm.h>
 #include <hardware/structs/io_bank0.h>
@@ -26,6 +29,10 @@
 // f_pwm = clk_sys / (div * (TOP + 1))
 // I want f_pwm = 20 kHz, so clk_sys = 125 MHz, div=1 => TOP=6249
 #define PWM_TOP 6249u
+
+#define WHEEL_DIAMETER_MM 65.0f
+#define ENCODER_TICKS_PER_MOTOR_REV 20.0f
+#define STOP_EARLY_MM 0.0f
 
 static inline void gpio_set_func_pwm(uint gpio) {
   io_bank0_hw->io[gpio].ctrl = GPIO_FUNC_PWM << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
@@ -87,6 +94,16 @@ static inline uint8_t signed_speed_to_duty(int8_t speed, motor_dir_t *dir) {
   return clamp_u8((uint8_t)(-s), 0u, 100u);
 }
 
+static uint32_t distance_mm_to_ticks(float distance_mm) {
+  const float pi = 3.1415926f;
+  float wheel_circ_mm = pi * WHEEL_DIAMETER_MM;
+  float mm_per_tick = wheel_circ_mm / ENCODER_TICKS_PER_MOTOR_REV;
+  float ticks = distance_mm / mm_per_tick;
+  if (ticks < 0.0f) {
+    ticks = 0.0f;
+  }
+  return (uint32_t)(ticks + 0.5f);
+}
 
 static void motor_apply_pins(uint in_fwd, uint in_rev, motor_dir_t dir,
                              uint8_t duty_percent) {
@@ -167,4 +184,38 @@ void motors_pwm_drive_lr_signed(int8_t left_speed, int8_t right_speed) {
   uint8_t right_duty = signed_speed_to_duty(right_speed, &right_dir);
   motor_apply_pins(LEFT_IN_FWD, LEFT_IN_REV, left_dir, left_duty);
   motor_apply_pins(RIGHT_IN_FWD, RIGHT_IN_REV, right_dir, right_duty);
+}
+
+void motors_pwm_drive_forward_mm(uint8_t speed, float distance_mm) {
+  uint32_t target_ticks = distance_mm_to_ticks(distance_mm);
+  uint32_t stop_early_ticks = distance_mm_to_ticks(STOP_EARLY_MM);
+  if (stop_early_ticks > target_ticks) {
+    stop_early_ticks = target_ticks;
+  }
+  uint32_t stop_ticks = target_ticks - stop_early_ticks;
+
+  B83609_reset_counts();
+  motors_pwm_drive_lr_signed((int8_t)speed, (int8_t)speed);
+
+  while (B83609_get_left_count() < stop_ticks) {
+    busy_wait_ms_hw(10);
+  }
+
+  motors_pwm_stop(MOTOR_BOTH);
+}
+
+void motors_pwm_turn(motor_turn_dir_t dir, uint32_t ticks) {
+  int8_t left_speed = 100;
+  int8_t right_speed = -100;
+  if (dir == MOTOR_TURN_LEFT) {
+    left_speed = -left_speed;
+    right_speed = -right_speed;
+  }
+
+  B83609_reset_counts();
+  motors_pwm_drive_lr_signed(left_speed, right_speed);
+  while (B83609_get_left_count() < ticks) {
+    busy_wait_ms_hw(1);
+  }
+  motors_pwm_stop(MOTOR_BOTH);
 }
