@@ -1,4 +1,4 @@
-.PHONY: latest assignment1 assignment2 assignment3 assignment4
+.PHONY: latest assignment1 assignment2 assignment3 assignment4 assignment6
 
 BUILD_LATEST := build_latest
 SRC_LATEST := src
@@ -14,6 +14,9 @@ SNAPSHOT_ASSIGNMENT3 := snapshots/assignment3_pid
 
 BUILD_ASSIGNMENT4 := build_assignment4
 SNAPSHOT_ASSIGNMENT4 := snapshots/assignment4_obs
+
+BUILD_ASSIGNMENT6 := build_assignment5
+SNAPSHOT_ASSIGNMENT6 := snapshots/assignment5_dist
 
 latest:
 	cmake -S . -B $(BUILD_LATEST) -DROBOT_SRC_DIR=$(SRC_LATEST) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
@@ -43,4 +46,10 @@ assignment4:
 	cmake -S $(SNAPSHOT_ASSIGNMENT4) -B $(SNAPSHOT_ASSIGNMENT4)/$(BUILD_ASSIGNMENT4) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 	cmake --build $(SNAPSHOT_ASSIGNMENT4)/$(BUILD_ASSIGNMENT4)
 	picotool load $(SNAPSHOT_ASSIGNMENT4)/$(BUILD_ASSIGNMENT4)/robot.uf2
+	picotool reboot
+
+assignment5:
+	cmake -S $(SNAPSHOT_ASSIGNMENT6) -B $(SNAPSHOT_ASSIGNMENT6)/$(BUILD_ASSIGNMENT6) -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+	cmake --build $(SNAPSHOT_ASSIGNMENT6)/$(BUILD_ASSIGNMENT6)
+	picotool load $(SNAPSHOT_ASSIGNMENT6)/$(BUILD_ASSIGNMENT6)/robot.uf2
 	picotool reboot

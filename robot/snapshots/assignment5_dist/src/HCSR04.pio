@@ -1,0 +1,30 @@
+.program HCSR04_trig
+init:
+    pull block
+    mov isr, osr
+.wrap_target
+loop:
+    set pins, 0
+    set pins, 1 [19]
+    set pins, 0
+
+    mov x, isr
+delay:
+    jmp x--, delay
+.wrap
+
+
+.program HCSR04_echo
+.wrap_target
+wait_high:
+    wait 1 pin 0
+    mov x, ~null
+count:
+    jmp pin, dec
+    mov isr, x
+    push block
+    wait 0 pin 0
+    jmp wait_high
+dec:
+    jmp x--, count
+.wrap
