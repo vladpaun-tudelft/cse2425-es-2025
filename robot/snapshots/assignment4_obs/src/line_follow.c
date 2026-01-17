@@ -13,22 +13,21 @@
 
 #define LOOP_DT_S 0.01f
 
-#define BASE_SPEED 80
-#define MIN_DUTY 65
+#define BASE_SPEED 70
 #define MAX_SPEED 100
 #define PID_OUT_MARGIN 0
 
 #define ERROR_DEADZONE 0.0f
 
-#define PID_KP 200.0f
-#define PID_KI 0.0f
-#define PID_KD 2.0f
+#define PID_KP 40.0f
+#define PID_KI 5.0f
+#define PID_KD 5.0f
 #define PID_OUT_MAX (MAX_SPEED - BASE_SPEED - PID_OUT_MARGIN)
 #define PID_OUT_MIN (-(PID_OUT_MAX))
 
-#define VLAD_FACTOR_MUL 1.0f
-#define VLAD_FACTOR_LIN 0.0f
-#define INNER_CORR_GAIN ((((float)(MAX_SPEED + BASE_SPEED)) / (float)PID_OUT_MAX) * (VLAD_FACTOR_MUL) + (VLAD_FACTOR_LIN))
+#define VLAD_FACTOR_MUL 0.0f
+#define VLAD_FACTOR_LIN 1.0f
+#define INNER_CORR_GAIN ((((float)(MAX_SPEED + BASE_SPEED)) / (float)PID_OUT_MAX) * (VLAD_FACTOR_MUL) + (VLAD_FACTOR_LIN)) * VLAD_FACTOR_MUL + VLAD_FACTOR_LIN
 
 static pid_t s_pid;
 
@@ -38,18 +37,8 @@ static inline int16_t clamp(int16_t v, int16_t lo, int16_t hi) {
   return v;
 }
 
-static int8_t apply_min_duty(int16_t speed) {
-  if (speed == 0) return 0;
-
-  int16_t abs_speed = speed < 0 ? -speed : speed;
-  if (abs_speed < MIN_DUTY) abs_speed = MIN_DUTY;
-  if (abs_speed > MAX_SPEED) abs_speed = MAX_SPEED;
-
-  return (speed < 0) ? (int8_t)(-abs_speed) : (int8_t)abs_speed;
-}
-
 void line_follow_init(void) {
-  motors_pwm_init();
+  motors_pwm_init(65);
   TCRT5000_init();
   PID_init(&s_pid, PID_KP, PID_KI, PID_KD, PID_OUT_MIN, PID_OUT_MAX);
 }
@@ -85,8 +74,7 @@ void line_follow_step(line_follow_debug_t *debug) {
   left_speed = clamp(left_speed, -MAX_SPEED, MAX_SPEED);
   right_speed = clamp(right_speed, -MAX_SPEED, MAX_SPEED);
 
-  motors_pwm_drive_lr_signed(apply_min_duty(left_speed),
-                             apply_min_duty(right_speed));
+  motors_pwm_drive_lr_signed(left_speed, right_speed);
 
   if (debug) {
     debug->left_raw = left_raw;

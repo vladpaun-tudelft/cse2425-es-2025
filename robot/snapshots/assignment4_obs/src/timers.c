@@ -14,3 +14,9 @@ void busy_wait_ms_hw(uint32_t ms) {
     __asm volatile("nop");
   }
 }
+
+uint64_t time_us_hw(void) {
+  uint32_t hi = timer_hw->timerawh;
+  uint32_t lo = timer_hw->timerawl;
+  return ((uint64_t)hi << 32) | (uint64_t)lo;
+}

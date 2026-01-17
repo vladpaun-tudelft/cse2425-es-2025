@@ -32,6 +32,8 @@
 // I want f_pwm = 20 kHz, so clk_sys = 125 MHz, div=1 => TOP=6249
 #define PWM_TOP 6249u
 
+static uint8_t s_min_duty = 0u;
+
 static inline void gpio_set_func_pwm(uint gpio) {
   io_bank0_hw->io[gpio].ctrl = GPIO_FUNC_PWM << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
 }
@@ -95,6 +97,9 @@ static inline uint8_t signed_speed_to_duty(int8_t speed, motor_dir_t *dir) {
 
 static void motor_apply_pins(uint in_fwd, uint in_rev, motor_dir_t dir,
                              uint8_t duty_percent) {
+  if (duty_percent != 0u && duty_percent < s_min_duty) {
+    duty_percent = s_min_duty;
+  }
   uint16_t level = duty_to_level(duty_percent);
 
   if (duty_percent == 0) {
@@ -112,7 +117,8 @@ static void motor_apply_pins(uint in_fwd, uint in_rev, motor_dir_t dir,
   }
 }
 
-void motors_pwm_init(void) {
+void motors_pwm_init(uint8_t min_duty_percent) {
+  s_min_duty = clamp_u8(min_duty_percent, 0u, 100u);
   gpio_set_func_pwm(RIGHT_IN1);
   gpio_set_func_pwm(RIGHT_IN2);
   gpio_set_func_pwm(LEFT_IN1);
