@@ -17,6 +17,8 @@ add_executable(robot
     ${ROBOT_SRC_DIR}/obstacle_avoidance.c
     ${ROBOT_SRC_DIR}/timers.c
     ${ROBOT_SRC_DIR}/motors_pwm.c
+    ${ROBOT_SRC_DIR}/B83609.c
+    ${ROBOT_SRC_DIR}/multicore.c
     ${ROBOT_SRC_DIR}/HCSR04.c
     ${ROBOT_SRC_DIR}/TCRT5000.c
     ${ROBOT_SRC_DIR}/pid.c
@@ -27,7 +29,6 @@ pico_generate_pio_header(robot ${ROBOT_SRC_DIR}/HCSR04.pio)
 target_link_libraries(robot
     pico_stdlib
     hardware_pio
-    pico_multicore
 )
 
 pico_enable_stdio_usb(robot 1)
