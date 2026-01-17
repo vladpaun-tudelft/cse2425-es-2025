@@ -6,12 +6,12 @@
 #include "HCSR04.h"
 #include "B83609.h"
 #include "line_follow.h"
+#include "multicore.h"
 #include "obstacle_avoidance.h"
 #include "timers.h"
 
 #include <pico/stdio.h>
 #include <stdbool.h>
-#include <pico/multicore.h>
 
 #define FRONT_TRIG_PIN 9
 #define FRONT_ECHO_PIN 8
@@ -78,9 +78,7 @@ int main(void) {
 
   while (true) {
     if (multicore_fifo_rvalid()) {
-      while (multicore_fifo_rvalid()) {
-        (void)multicore_fifo_pop_blocking();
-      }
+      multicore_fifo_drain();
       state = STATE_AVOID_OBSTACLE;
     }
 
@@ -88,9 +86,7 @@ int main(void) {
       line_follow_step();
     } else {
       obstacle_avoidance_run(&front_cfg, &side_cfg);
-      while (multicore_fifo_rvalid()) {
-        (void)multicore_fifo_pop_blocking();
-      }
+      multicore_fifo_drain();
       state = STATE_LINE_FOLLOW;
     }
 
