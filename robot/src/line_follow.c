@@ -8,22 +8,22 @@
 
 #define LOOP_DT_S 0.01f
 
-#define BASE_SPEED 80
+#define BASE_SPEED 70
 #define MIN_DUTY 65
 #define MAX_SPEED 100
 #define PID_OUT_MARGIN 0
 
 #define ERROR_DEADZONE 0.0f
 
-#define PID_KP 200.0f
-#define PID_KI 0.0f
-#define PID_KD 2.0f
+#define PID_KP 40.0f
+#define PID_KI 5.0f
+#define PID_KD 5.0f
 #define PID_OUT_MAX (MAX_SPEED - BASE_SPEED - PID_OUT_MARGIN)
 #define PID_OUT_MIN (-(PID_OUT_MAX))
 
-#define VLAD_FACTOR_MUL 1.0f
-#define VLAD_FACTOR_LIN 0.0f
-#define INNER_CORR_GAIN ((((float)(MAX_SPEED + BASE_SPEED)) / (float)PID_OUT_MAX) * (VLAD_FACTOR_MUL) + (VLAD_FACTOR_LIN))
+#define VLAD_FACTOR_MUL 0.0f
+#define VLAD_FACTOR_LIN 1.0f
+#define INNER_CORR_GAIN ((((float)(MAX_SPEED + BASE_SPEED)) / (float)PID_OUT_MAX) * (VLAD_FACTOR_MUL) + (VLAD_FACTOR_LIN)) * VLAD_FACTOR_MUL + VLAD_FACTOR_LIN
 
 static pid_t s_pid;
 
