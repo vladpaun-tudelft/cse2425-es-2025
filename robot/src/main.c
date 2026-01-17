@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #include "HCSR04.h"
 #include "B83609.h"
 #include "line_follow.h"

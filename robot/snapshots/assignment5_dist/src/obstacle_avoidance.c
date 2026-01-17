@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #include "obstacle_avoidance.h"
 
 #include "motors_pwm.h"

@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #include "TCRT5000.h"
 
 #include <hardware/regs/adc.h>

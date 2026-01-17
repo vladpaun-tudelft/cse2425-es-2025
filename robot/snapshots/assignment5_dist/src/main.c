@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #include "B83609.h"
 #include "line_follow.h"
 #include "motors_pwm.h"

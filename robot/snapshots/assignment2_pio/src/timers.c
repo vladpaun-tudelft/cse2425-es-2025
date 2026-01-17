@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #include "timers.h"
 #include <hardware/structs/timer.h>
 

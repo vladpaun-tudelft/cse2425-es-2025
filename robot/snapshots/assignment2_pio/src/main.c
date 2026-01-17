@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #include "HCSR04.h"
 #include "motors_pwm.h"
 #include "timers.h"

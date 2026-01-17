@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #include "obstacle_avoidance.h"
 
 #include "TCRT5000.h"
@@ -80,8 +85,6 @@ static void forward_hold_side(const hcsr04_config_t *side_cfg,
     int8_t left_speed = apply_min_speed((int16_t)lroundf(left_cmd));
     int8_t right_speed = apply_min_speed((int16_t)lroundf(right_cmd));
     motors_pwm_drive_lr_signed(left_speed, right_speed);
-    // busy_wait_ms_hw(20);
-    // motors_pwm_stop(MOTOR_BOTH);
     busy_wait_ms_hw(20);
   }
 }

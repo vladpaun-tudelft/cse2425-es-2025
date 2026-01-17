@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #include "HCSR04.h"
 #include "HCSR04.pio.h"
 

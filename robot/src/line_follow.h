@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #ifndef LINE_FOLLOW_H
 #define LINE_FOLLOW_H
 

@@ -1,3 +1,8 @@
+/**
+ * Student name: Vlad Paun
+ * Student number: 6152937
+ */
+
 #include "motors_pwm.h"
 
 #include <hardware/regs/io_bank0.h>
