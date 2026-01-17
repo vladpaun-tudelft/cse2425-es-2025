@@ -39,6 +39,8 @@
 #define ENCODER_TICKS_PER_MOTOR_REV 20.0f
 #define STOP_EARLY_MM 0.0f
 
+static uint8_t s_min_duty = 0u;
+
 static inline void gpio_set_func_pwm(uint gpio) {
   io_bank0_hw->io[gpio].ctrl = GPIO_FUNC_PWM << IO_BANK0_GPIO0_CTRL_FUNCSEL_LSB;
 }
@@ -112,6 +114,9 @@ static uint32_t distance_mm_to_ticks(float distance_mm) {
 
 static void motor_apply_pins(uint in_fwd, uint in_rev, motor_dir_t dir,
                              uint8_t duty_percent) {
+  if (duty_percent != 0u && duty_percent < s_min_duty) {
+    duty_percent = s_min_duty;
+  }
   uint16_t level = duty_to_level(duty_percent);
 
   if (duty_percent == 0) {
@@ -129,7 +134,8 @@ static void motor_apply_pins(uint in_fwd, uint in_rev, motor_dir_t dir,
   }
 }
 
-void motors_pwm_init(void) {
+void motors_pwm_init(uint8_t min_duty_percent) {
+  s_min_duty = clamp_u8(min_duty_percent, 0u, 100u);
   gpio_set_func_pwm(RIGHT_IN1);
   gpio_set_func_pwm(RIGHT_IN2);
   gpio_set_func_pwm(LEFT_IN1);

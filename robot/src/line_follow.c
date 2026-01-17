@@ -10,11 +10,11 @@
 #include "TCRT5000.h"
 
 #include <math.h>
+#include <stdint.h>
 
 #define LOOP_DT_S 0.01f
 
 #define BASE_SPEED 80
-#define MIN_DUTY 65
 #define MAX_SPEED 100
 #define PID_OUT_MARGIN 0
 
@@ -32,24 +32,14 @@
 
 static pid_t s_pid;
 
-static inline int16_t clamp(int16_t v, int16_t lo, int16_t hi) {
-  if (v < lo)return lo;
-  if (v > hi)return hi;
-  return v;
-}
-
-static int8_t apply_min_duty(int16_t speed) {
-  if (speed == 0) return 0;
-
-  int16_t abs_speed = speed < 0 ? -speed : speed;
-  if (abs_speed < MIN_DUTY) abs_speed = MIN_DUTY;
-  if (abs_speed > MAX_SPEED) abs_speed = MAX_SPEED;
-
-  return (speed < 0) ? (int8_t)(-abs_speed) : (int8_t)abs_speed;
+static inline int clamp(float v, int lo, int hi) {
+  if ((int)v < lo)return lo;
+  if ((int)v > hi)return hi;
+  return (int)v;
 }
 
 void line_follow_init(void) {
-  motors_pwm_init();
+  motors_pwm_init(65);
   TCRT5000_init();
   PID_init(&s_pid, PID_KP, PID_KI, PID_KD, PID_OUT_MIN, PID_OUT_MAX);
 }
@@ -79,21 +69,8 @@ void line_follow_step(line_follow_debug_t *debug) {
     right_cmd += inner_correction;
   }
 
-  int16_t left_speed = (int16_t)lroundf(left_cmd);
-  int16_t right_speed = (int16_t)lroundf(right_cmd);
 
-  left_speed = clamp(left_speed, -MAX_SPEED, MAX_SPEED);
-  right_speed = clamp(right_speed, -MAX_SPEED, MAX_SPEED);
+  motors_pwm_drive_lr_signed(clamp(left_cmd, -MAX_SPEED, MAX_SPEED),
+                             clamp(right_cmd, -MAX_SPEED, MAX_SPEED));
 
-  motors_pwm_drive_lr_signed(apply_min_duty(left_speed),
-                             apply_min_duty(right_speed));
-
-  if (debug) {
-    debug->left_raw = left_raw;
-    debug->right_raw = right_raw;
-    debug->error = error;
-    debug->correction = correction;
-    debug->left_speed = left_speed;
-    debug->right_speed = right_speed;
-  }
 }
