@@ -21,4 +21,3 @@ RP2040 robot codebase for line following, obstacle avoidance, and fixed-distance
 ## Notes
 
 - Uses Pico SDK (see `pico_sdk_import.cmake`).
-- Custom register-based multicore helpers live in `src/multicore.c`/`src/multicore.h`.
