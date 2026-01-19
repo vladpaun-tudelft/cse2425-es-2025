@@ -10,9 +10,7 @@
 #include <hardware/structs/io_bank0.h>
 #include <hardware/structs/pwm.h>
 
-// -------------------------
 // Motor pins
-// -------------------------
 // Right motor: GPIO19 + GPIO18  (PWM1B + PWM1A)
 // Left motor:  GPIO21 + GPIO20  (PWM2B + PWM2A)
 #define RIGHT_IN1 19
@@ -25,9 +23,7 @@
 #define LEFT_IN_FWD LEFT_IN1
 #define LEFT_IN_REV LEFT_IN2
 
-// -------------------------
 // PWM config
-// -------------------------
 // f_pwm = clk_sys / (div * (TOP + 1))
 // I want f_pwm = 20 kHz, so clk_sys = 125 MHz, div=1 => TOP=6249
 #define PWM_TOP 6249u
@@ -53,7 +49,7 @@ static void pwm_init_slice(uint slice) {
   pwm_hw->slice[slice].csr = (1u << PWM_CH0_CSR_EN_LSB);
 }
 
-static inline uint8_t clamp_u8(uint8_t v, uint8_t lo, uint8_t hi) {
+static inline uint8_t clamp(uint8_t v, uint8_t lo, uint8_t hi) {
   if (v < lo)
     return lo;
   if (v > hi)
@@ -62,7 +58,7 @@ static inline uint8_t clamp_u8(uint8_t v, uint8_t lo, uint8_t hi) {
 }
 
 static inline uint16_t duty_to_level(uint8_t duty_percent) {
-  duty_percent = clamp_u8(duty_percent, 0, 100);
+  duty_percent = clamp(duty_percent, 0, 100);
   if (duty_percent >= 100)
     return (uint16_t)(PWM_TOP + 1u);
   return (uint16_t)(((uint32_t)(PWM_TOP + 1u) * (uint32_t)duty_percent) / 100u);
@@ -126,7 +122,7 @@ void motors_pwm_stop(motor_select_t which) {
 
 void motors_pwm_drive(motor_select_t which, motor_dir_t dir,
                       uint8_t duty_percent) {
-  duty_percent = clamp_u8(duty_percent, 0, 100);
+  duty_percent = clamp(duty_percent, 0, 100);
 
   if (which == MOTOR_LEFT || which == MOTOR_BOTH) {
     motor_apply_pins(LEFT_IN_FWD, LEFT_IN_REV, dir, duty_percent);

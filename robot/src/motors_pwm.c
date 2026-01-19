@@ -13,9 +13,7 @@
 #include <hardware/structs/io_bank0.h>
 #include <hardware/structs/pwm.h>
 
-// -------------------------
 // Motor pins
-// -------------------------
 // Right motor: GPIO19 + GPIO18  (PWM1B + PWM1A)
 // Left motor:  GPIO21 + GPIO20  (PWM2B + PWM2A)
 #define RIGHT_IN1 19
@@ -28,9 +26,7 @@
 #define LEFT_IN_FWD LEFT_IN1
 #define LEFT_IN_REV LEFT_IN2
 
-// -------------------------
 // PWM config
-// -------------------------
 // f_pwm = clk_sys / (div * (TOP + 1))
 // I want f_pwm = 20 kHz, so clk_sys = 125 MHz, div=1 => TOP=6249
 #define PWM_TOP 6249u
