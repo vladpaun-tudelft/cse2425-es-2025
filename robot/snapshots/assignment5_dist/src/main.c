@@ -11,7 +11,7 @@
 #include <pico/stdio.h>
 #include <stdbool.h>
 
-#define TARGET_DISTANCE_M 2.5f
+#define TARGET_DISTANCE_M 0.9f
 #define WHEEL_DIAMETER_MM 65.0f
 #define ENCODER_TICKS_PER_MOTOR_REV 20.0f
 #define STOP_EARLY_MM 30.0f
