@@ -20,7 +20,7 @@ static void turn_right_to_match_front(const hcsr04_config_t *front_cfg,
   float side_cm = HCSR04_get_distance_cm(side_cfg);
 
   while (fabsf(side_cm - front_cm) > tol_cm) {
-    motors_pwm_drive_lr_signed(70, -70);
+    motors_pwm_drive_lr_signed(75, -75);
     busy_wait_ms_hw(10);
     side_cm = HCSR04_get_distance_cm(side_cfg);
   }
