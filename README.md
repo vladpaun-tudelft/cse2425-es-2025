@@ -1,7 +1,7 @@
 # CSE2425 Embedded Software 2025
 
 > **Archived repository**  
-> Personal archive of my TU Delft CSE2115 coursework. This repo is not maintained and is kept for reference only.
+> Personal archive of my TU Delft CSE2425 coursework. This repo is not maintained and is kept for reference only.
 
 Repository for TU Delft CSE2425 Embedded Software lab assignments.
 
